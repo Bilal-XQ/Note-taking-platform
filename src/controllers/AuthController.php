@@ -1,63 +1,112 @@
 <?php
-session_start();
-$login_error = '';
-$login_username = '';
-$login_remember = false;
+require_once __DIR__ . '/../models/Student.php';
+require_once __DIR__ . '/../models/Module.php';
 
-// Logout logic
-if (isset($_GET['logout'])) {
-    session_destroy();
-    header('Location: /main/index.php');
-    exit;
-}
+class AuthController {
+    private $studentModel;
 
-// Load DB config
-$db_config = require __DIR__ . '/../../config/database.php';
+    public function __construct() {
+        $this->studentModel = new Student();
+    }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username'], $_POST['password'])) {
-    $login_username = trim($_POST['username']);
-    $password = trim($_POST['password']);
-    $login_remember = isset($_POST['remember']);
-
-    if ($login_username === '' || $password === '') {
-        $login_error = 'Please enter both username and password.';
-    } else {
-        // DB connection
-        $db = new mysqli($db_config['host'], $db_config['user'], $db_config['pass'], $db_config['dbname']);
-        if ($db->connect_error) {
-            $login_error = 'Database connection failed.';
-        } else {
-            $sql = "SELECT id, 'admin' as role FROM admins WHERE username = ? AND password = ? UNION ALL SELECT id, 'student' as role FROM students WHERE username = ? AND password = ? LIMIT 1";
-            $stmt = $db->prepare($sql);
-            $stmt->bind_param('ssss', $login_username, $password, $login_username, $password);
-            $stmt->execute();
-            $result = $stmt->get_result();
-            if ($row = $result->fetch_assoc()) {
-                session_regenerate_id(true);
-                if ($row['role'] === 'admin') {
-                    $_SESSION['admin_id'] = $row['id'];
-                    if ($login_remember) setcookie('remembered_user', $login_username, time() + 60*60*24*30, "/");
-                    else setcookie('remembered_user', '', time() - 3600, "/");
-                    header('Location: /main/admin/dashboard.php');
-                    exit;
-                } else {
-                    $_SESSION['student_id'] = $row['id'];
-                    if ($login_remember) setcookie('remembered_user', $login_username, time() + 60*60*24*30, "/");
-                    else setcookie('remembered_user', '', time() - 3600, "/");
-                    header('Location: /main/student/home.php');
-                    exit;
-                }
-            } else {
-                $login_error = 'Invalid username or password.';
-            }
-            $stmt->close();
-            $db->close();
+    // Helper function to start session safely
+    private function startSession() {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
         }
     }
-} else {
-    // Prefill from cookie if exists
-    if (isset($_COOKIE['remembered_user'])) {
-        $login_username = $_COOKIE['remembered_user'];
-        $login_remember = true;
+
+    public function login($username, $password) {
+        // First check if it's an admin
+        $admin = $this->checkAdminLogin($username, $password);
+        if ($admin) {
+            $this->startSession();
+            $_SESSION['admin_id'] = $admin['id'];
+            $_SESSION['admin_username'] = $admin['username'];
+            $_SESSION['is_admin'] = true;
+            $_SESSION['is_logged_in'] = true;
+            return 'admin';
+        }
+        
+        // If not admin, check if it's a student
+        $student = $this->studentModel->login($username, $password);
+        if ($student) {
+            // Update the last_login time
+            try {
+                $conn = getDBConnection();
+                $stmt = $conn->prepare("UPDATE students SET last_login = CURRENT_TIMESTAMP WHERE id = :id");
+                $stmt->bindParam(':id', $student['id']);
+                $stmt->execute();
+            } catch (PDOException $e) {
+                // Continue even if this fails (the column might not exist yet)
+            }
+
+            $this->startSession();
+            $_SESSION['student_id'] = $student['id'];
+            $_SESSION['student_name'] = $student['full_name'];
+            $_SESSION['is_admin'] = false;
+            $_SESSION['is_logged_in'] = true;
+            return 'student';
+        }
+
+        return false;
     }
-} 
+    
+    private function checkAdminLogin($username, $password) {
+        try {
+            $conn = getDBConnection();
+            $stmt = $conn->prepare("SELECT id, username, password FROM admins WHERE username = :username");
+            $stmt->bindParam(':username', $username);
+            $stmt->execute();
+            
+            if($stmt->rowCount() > 0) {
+                $admin = $stmt->fetch(PDO::FETCH_ASSOC);
+                
+                // Simple plain text password comparison
+                if($password === $admin['password']) {
+                    return [
+                        'id' => $admin['id'],
+                        'username' => $admin['username']
+                    ];
+                }
+            }
+            return false;
+        } catch(PDOException $e) {
+            return false;
+        }
+    }
+
+    public function logout() {
+        $this->startSession();
+        $_SESSION = array();
+        session_destroy();
+        
+        // Clear remember me cookie if exists
+        if(isset($_COOKIE['remember_user'])) {
+            setcookie('remember_user', '', time() - 3600, "/");
+        }
+        
+        return true;
+    }
+
+    public function isLoggedIn() {
+        $this->startSession();
+        return isset($_SESSION['is_logged_in']) && $_SESSION['is_logged_in'] === true;
+    }
+
+    public function isAdmin() {
+        $this->startSession();
+        return isset($_SESSION['is_admin']) && $_SESSION['is_admin'] === true;
+    }
+
+    public function getCurrentStudentId() {
+        $this->startSession();
+        return isset($_SESSION['student_id']) ? $_SESSION['student_id'] : null;
+    }
+
+    public function getCurrentStudentName() {
+        $this->startSession();
+        return isset($_SESSION['student_name']) ? $_SESSION['student_name'] : null;
+    }
+}
+?>

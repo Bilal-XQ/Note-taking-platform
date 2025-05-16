@@ -1,22 +1,32 @@
-# Student Note-Taking Platform
+Student Note-Taking Website
+Objective
+The purpose of this project is to develop a simple and effective web application that helps students stay organized, take notes for their different modules, and improve their learning and revision process.
 
-A web platform for students to organize notes by module, stay productive, and improve learning.
+Key Features
+Each student will be able to:
 
-## Features
-- Add, edit, and delete notes
-- Organize notes by module
-- Admin and AI features coming soon
+Add notes for different modules (e.g., Web, OOP, Math, etc.)
 
-## Tech Stack
-- HTML/CSS/JS (no frameworks)
-- PHP (server-side)
-- MySQL (phpMyAdmin)
+Edit their notes at any time
 
-## Setup
-1. Configure your database in `config/database.php`
-2. Serve the project root with Apache (with mod_rewrite enabled)
-3. Access via `index.php`
+Delete notes they no longer need
 
----
+Organize notes by module
 
-More details coming soon.
+Note: Organization by chapters or specific topics may be added in the future.
+
+Technologies to Use
+PHP — Handles server-side logic (create, edit, delete notes)
+
+MySQL — Stores data (notes, modules, users)
+
+CSS — Designs the website layout, colors, and structure
+
+JavaScript — Adds interactivity (modals, alerts, dynamic buttons)
+
+Future Enhancements (AI Integration)
+Integrate Artificial Intelligence to:
+
+Generate summaries from students’ notes
+
+Create quizzes to help students review their content
