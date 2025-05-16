@@ -61,7 +61,3 @@ create table students
 create index admin_id
     on students (admin_id);
 
-ALTER TABLE students
-    ADD COLUMN last_login TIMESTAMP NULL DEFAULT NULL,
-    ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
