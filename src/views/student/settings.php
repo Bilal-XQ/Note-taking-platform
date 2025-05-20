@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../../controllers/AuthController.php';
+require_once __DIR__ . '/../../controllers/NotesController.php';
 
 // Check if user is logged in
 $authController = new AuthController();

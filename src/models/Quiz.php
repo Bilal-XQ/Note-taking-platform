@@ -1,4 +1,4 @@
-<?php
+    <?php
 require_once __DIR__ . '/../../config/database.php';
 
 class Quiz {
@@ -314,15 +314,15 @@ class Quiz {
     }
 
     /**
-     * Generate a quiz using the Gemini API
+     * Generate a quiz using the OpenRouter API
      * 
      * @param string $noteContent The content of the note
      * @param string $noteTitle The title of the note
      * @return array|bool The generated quiz data or false on failure
      */
-    public function generateQuizWithGemini($noteContent, $noteTitle) {
+    public function generateQuizWithOpenRouter($noteContent, $noteTitle) {
         // OpenRouter API key
-        $apiKey = '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';
+        $apiKey = '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';
         $url = 'https://openrouter.ai/api/v1/chat/completions';
 
         // Prepare the request data
@@ -355,7 +355,7 @@ class Quiz {
         $noteContent";
 
         $data = [
-            'model' => 'openchat/openchat-3.5-1210',
+            'model' => 'openai/gpt-3.5-turbo',
             'messages' => [
                 [
                     'role' => 'system',
@@ -379,7 +379,9 @@ class Quiz {
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
         curl_setopt($ch, CURLOPT_HTTPHEADER, [
             'Content-Type: application/json',
-            'Authorization: Bearer ' . $apiKey
+            'Authorization: Bearer ' . $apiKey,
+            'HTTP-Referer: https://localhost',
+            'X-Title: StudyNotesApp'
         ]);
 
         // Execute cURL session and get the response

@@ -119,8 +119,8 @@ class Note {
             return false;
         }
 
-        // Use Gemini API to generate summary
-        $summary = $this->generateSummaryWithGemini($note['content']);
+        // Use OpenRouter API to generate summary
+        $summary = $this->generateSummaryWithOpenRouter($note['content']);
 
         try {
             $stmt = $this->conn->prepare("
@@ -138,14 +138,14 @@ class Note {
         }
     }
 
-    public function generateSummaryWithGemini($content) {
+    public function generateSummaryWithOpenRouter($content) {
         // OpenRouter API key
-        $apiKey = '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';
+        $apiKey = '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';
         $url = 'https://openrouter.ai/api/v1/chat/completions';
 
         // Prepare the request data
         $data = [
-            'model' => 'openchat/openchat-3.5-1210',
+            'model' => 'openai/gpt-3.5-turbo',
             'messages' => [
                 [
                     'role' => 'system',
@@ -169,7 +169,9 @@ class Note {
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
         curl_setopt($ch, CURLOPT_HTTPHEADER, [
             'Content-Type: application/json',
-            'Authorization: Bearer ' . $apiKey
+            'Authorization: Bearer ' . $apiKey,
+            'HTTP-Referer: https://localhost',
+            'X-Title: StudyNotesApp'
         ]);
 
         // Execute cURL session and get the response
@@ -214,7 +216,7 @@ class Note {
 
             // Generate summary for each note
             foreach ($notes as $note) {
-                $summary = $this->generateSummaryWithGemini($note['content']);
+                $summary = $this->generateSummaryWithOpenRouter($note['content']);
 
                 // Update the note with the summary
                 $updateStmt = $this->conn->prepare("

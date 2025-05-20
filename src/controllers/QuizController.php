@@ -32,8 +32,8 @@ class QuizController {
             return false;
         }
 
-        // Generate quiz data using Gemini API
-        $quizData = $this->quizModel->generateQuizWithGemini($note['content'], $note['title']);
+        // Generate quiz data using OpenRouter API
+        $quizData = $this->quizModel->generateQuizWithOpenRouter($note['content'], $note['title']);
         if (!$quizData || !isset($quizData['questions']) || empty($quizData['questions'])) {
             return false;
         }
