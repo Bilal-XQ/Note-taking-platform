@@ -1,0 +1,38 @@
+# Project Rules for Student Note-Taking Website
+
+##  Purpose
+Build a simple web platform to help students take, organize, and manage notes by module. The goal is to enhance productivity, learning, and revision through structured digital notes.
+
+## 🛠 Core Features
+- Users can create, edit, and delete notes.
+- Notes are grouped by module (e.g., Math, Web, OOP).
+- Basic user authentication with role-based access (admin, student).
+- Optional "remember me" feature via cookies.
+
+##  Tech Stack
+- **Frontend**: HTML, CSS, JavaScript (vanilla preferred)
+- **Backend**: PHP
+- **Database**: MySQL
+
+##  Authentication
+- Login system with sessions and optional persistent login via cookies.
+- Role-based redirection:
+    - Admin → Admin dashboard
+    - Student → Student dashboard
+
+##  Project Structure & Conventions
+- Use an MVC-inspired organization where possible.
+- Keep frontend and backend logic separated.
+- Prioritize readable, maintainable, and modular code.
+- Use consistent naming conventions.
+
+##  AI integration
+- AI-generated summaries for notes.
+- Auto-generated quizzes from note content.
+- Categorization by chapter or topic.
+
+##  What you Should Do
+- Follow these rules as a foundation.
+- Suggest improvements and modern practices.
+- Prioritize clean architecture and scalability.
+- Check consistency and security in all implementations.

@@ -1,34 +1,176 @@
 <?php
+require_once __DIR__ . '/../../config/database.php';
+
 class Student {
-    private $db;
+    private $conn;
+
     public function __construct() {
-        $cfg = require __DIR__ . '/../../config/database.php';
-        $this->db = new mysqli($cfg['host'], $cfg['user'], $cfg['pass'], $cfg['dbname']);
+        $this->conn = getDBConnection();
     }
-    public function all() {
-        $result = $this->db->query('SELECT * FROM students');
-        return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
+
+    public function login($username, $password) {
+        try {
+            $stmt = $this->conn->prepare("SELECT id, full_name, password FROM students WHERE username = :username");
+            $stmt->bindParam(':username', $username);
+            $stmt->execute();
+
+            if($stmt->rowCount() > 0) {
+                $student = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                // Simple plain text password comparison
+                if($password === $student['password']) {
+                    return [
+                        'id' => $student['id'],
+                        'full_name' => $student['full_name']
+                    ];
+                }
+            }
+            return false;
+        } catch(PDOException $e) {
+            return false;
+        }
     }
-    public function get($id) {
-        $stmt = $this->db->prepare('SELECT * FROM students WHERE id = ?');
-        $stmt->bind_param('i', $id);
-        $stmt->execute();
-        $res = $stmt->get_result();
-        return $res->fetch_assoc();
+
+    public function getStudentById($id) {
+        try {
+            $stmt = $this->conn->prepare("SELECT id, full_name, username, last_login FROM students WHERE id = :id");
+            $stmt->bindParam(':id', $id);
+            $stmt->execute();
+
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch(PDOException $e) {
+            return false;
+        }
     }
-    public function add($data) {
-        $stmt = $this->db->prepare('INSERT INTO students (full_name, username, password, admin_id) VALUES (?, ?, ?, ?)');
-        $stmt->bind_param('sssi', $data['full_name'], $data['username'], $data['password'], $_SESSION['admin_id']);
-        $stmt->execute();
+
+    public function getLastLogin($id) {
+        try {
+            $stmt = $this->conn->prepare("SELECT last_login FROM students WHERE id = :id");
+            $stmt->bindParam(':id', $id);
+            $stmt->execute();
+
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $result ? $result['last_login'] : null;
+        } catch(PDOException $e) {
+            return null;
+        }
     }
-    public function edit($id, $data) {
-        $stmt = $this->db->prepare('UPDATE students SET full_name=?, username=?, password=? WHERE id=?');
-        $stmt->bind_param('sssi', $data['full_name'], $data['username'], $data['password'], $id);
-        $stmt->execute();
+
+    public function getStudentModules($studentId) {
+        try {
+            $stmt = $this->conn->prepare("
+                SELECT m.id, m.name 
+                FROM modules m 
+                INNER JOIN student_modules sm ON m.id = sm.module_id 
+                WHERE sm.student_id = :studentId
+                ORDER BY m.name
+            ");
+            $stmt->bindParam(':studentId', $studentId);
+            $stmt->execute();
+
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch(PDOException $e) {
+            return [];
+        }
     }
-    public function delete($id) {
-        $stmt = $this->db->prepare('DELETE FROM students WHERE id=?');
-        $stmt->bind_param('i', $id);
-        $stmt->execute();
+
+    public function updateStudentInfo($studentId, $fullName, $username) {
+        try {
+            // Check if username is already taken by another student
+            $checkStmt = $this->conn->prepare("
+                SELECT id FROM students WHERE username = :username AND id != :studentId
+            ");
+            $checkStmt->bindParam(':username', $username);
+            $checkStmt->bindParam(':studentId', $studentId);
+            $checkStmt->execute();
+
+            if ($checkStmt->rowCount() > 0) {
+                return [
+                    'success' => false,
+                    'message' => 'Username is already taken by another student'
+                ];
+            }
+
+            // Update student information
+            $stmt = $this->conn->prepare("
+                UPDATE students 
+                SET full_name = :fullName, username = :username, updated_at = NOW() 
+                WHERE id = :studentId
+            ");
+            $stmt->bindParam(':fullName', $fullName);
+            $stmt->bindParam(':username', $username);
+            $stmt->bindParam(':studentId', $studentId);
+
+            if ($stmt->execute()) {
+                return [
+                    'success' => true,
+                    'message' => 'Student information updated successfully'
+                ];
+            } else {
+                return [
+                    'success' => false,
+                    'message' => 'Failed to update student information'
+                ];
+            }
+        } catch(PDOException $e) {
+            return [
+                'success' => false,
+                'message' => 'Database error: ' . $e->getMessage()
+            ];
+        }
     }
-} 
+
+    public function updateStudentPassword($studentId, $currentPassword, $newPassword) {
+        try {
+            // Verify current password
+            $checkStmt = $this->conn->prepare("
+                SELECT password FROM students WHERE id = :studentId
+            ");
+            $checkStmt->bindParam(':studentId', $studentId);
+            $checkStmt->execute();
+
+            $student = $checkStmt->fetch(PDO::FETCH_ASSOC);
+            if (!$student) {
+                return [
+                    'success' => false,
+                    'message' => 'Student not found'
+                ];
+            }
+
+            // Simple plain text password comparison
+            if ($currentPassword !== $student['password']) {
+                return [
+                    'success' => false,
+                    'message' => 'Current password is incorrect'
+                ];
+            }
+
+            // Update password
+            $stmt = $this->conn->prepare("
+                UPDATE students 
+                SET password = :newPassword, updated_at = NOW() 
+                WHERE id = :studentId
+            ");
+            $stmt->bindParam(':newPassword', $newPassword);
+            $stmt->bindParam(':studentId', $studentId);
+
+            if ($stmt->execute()) {
+                return [
+                    'success' => true,
+                    'message' => 'Password updated successfully'
+                ];
+            } else {
+                return [
+                    'success' => false,
+                    'message' => 'Failed to update password'
+                ];
+            }
+        } catch(PDOException $e) {
+            return [
+                'success' => false,
+                'message' => 'Database error: ' . $e->getMessage()
+            ];
+        }
+    }
+}
+?>
