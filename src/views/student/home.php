@@ -37,6 +37,7 @@ foreach ($modules as $module) {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="/main/public/css/modern-dashboard.css">
     <link rel="stylesheet" href="/main/public/css/sidebar-toggle.css">
+    <link rel="stylesheet" href="/main/public/css/notes-list-fix.css">
 </head>
 <body>
 <!-- Top Navigation Bar -->
@@ -223,6 +224,10 @@ foreach ($modules as $module) {
                                         <a href="/main/src/views/notes/edit.php?id=<?php echo $note['id']; ?>" class="note-btn edit-btn">
                                             <i class="fas fa-edit"></i>
                                             <span>Edit</span>
+                                        </a>
+                                        <a href="/main/src/views/notes/generate_summary.php?id=<?php echo $note['id']; ?>" class="note-btn summary-btn" title="Generate AI Summary for this note">
+                                            <i class="fas fa-brain"></i>
+                                            <span>Generate Summary</span>
                                         </a>
                                         <a href="/main/src/views/notes/generate_quiz.php?id=<?php echo $note['id']; ?>" class="note-btn quiz-btn" title="Generate AI Quiz for this note">
                                             <i class="fas fa-question-circle"></i>

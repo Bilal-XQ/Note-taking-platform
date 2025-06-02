@@ -84,7 +84,7 @@ class NotesController {
             return false;
         }
 
-        return $this->noteModel->generateAISummary($noteId, $studentId);
+        return $this->noteModel->generateAISummaryForNote($noteId, $studentId);
     }
 
     public function generateModuleSummaries($moduleId) {

@@ -8,6 +8,29 @@ class Note {
         $this->conn = getDBConnection();
     }
 
+    /**
+     * Static method to handle static calls to generateAISummary()
+     * This redirects static calls to an instance method
+     * 
+     * @param int $noteId The ID of the note to generate a summary for
+     * @return bool True if successful, false otherwise
+     */
+    public static function generateAISummary($noteId) {
+        // Start a session if not already started
+        if (session_status() == PHP_SESSION_NONE) {
+            session_start();
+        }
+
+        $instance = new self();
+        $studentId = isset($_SESSION['student_id']) ? $_SESSION['student_id'] : null;
+        if (!$studentId) {
+            return false;
+        }
+
+        // Call the instance method with a different name to avoid recursion
+        return $instance->_generateAISummaryImpl($noteId, $studentId);
+    }
+
     public function getNotesByStudentAndModule($studentId, $moduleId) {
         try {
             $stmt = $this->conn->prepare("
@@ -113,7 +136,15 @@ class Note {
         }
     }
 
-    public function generateAISummary($noteId, $studentId) {
+    /**
+     * Implementation of AI summary generation
+     * This is called by the static method generateAISummary
+     * 
+     * @param int $noteId The ID of the note to generate a summary for
+     * @param int $studentId The ID of the student who owns the note
+     * @return bool True if successful, false otherwise
+     */
+    public function _generateAISummaryImpl($noteId, $studentId) {
         $note = $this->getNoteById($noteId, $studentId);
         if (!$note) {
             return false;
@@ -138,40 +169,51 @@ class Note {
         }
     }
 
-    public function generateSummaryWithOpenRouter($content) {
-        // OpenRouter API key
-        $apiKey = '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';
-        $url = 'https://openrouter.ai/api/v1/chat/completions';
+    /**
+     * Instance method for generating AI summaries
+     * This is a wrapper around _generateAISummaryImpl for backward compatibility
+     * 
+     * @param int $noteId The ID of the note to generate a summary for
+     * @param int $studentId The ID of the student who owns the note
+     * @return bool True if successful, false otherwise
+     */
+    public function generateAISummaryForNote($noteId, $studentId) {
+        return $this->_generateAISummaryImpl($noteId, $studentId);
+    }
+
+    public function generateSummaryWithGemini($content) {
+        // Gemini API key
+        $apiKey = 'AIzaSyBPw9pwzj7sJL5xjUbrA9daktgfWvHH3dE';
+        $url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
 
         // Prepare the request data
         $data = [
-            'model' => 'openai/gpt-3.5-turbo',
-            'messages' => [
+            'contents' => [
                 [
-                    'role' => 'system',
-                    'content' => 'You are a helpful assistant that generates concise summaries of notes.'
-                ],
-                [
-                    'role' => 'user',
-                    'content' => "Please generate a concise summary of the following note content. Focus on the key points and main ideas: \n\n" . $content
+                    'parts' => [
+                        [
+                            'text' => "Please generate a concise summary of the following note content. Focus on the key points and main ideas: \n\n" . $content
+                        ]
+                    ]
                 ]
             ],
-            'temperature' => 0.2,
-            'max_tokens' => 800
+            'generationConfig' => [
+                'temperature' => 0.2,
+                'maxOutputTokens' => 800,
+                'topP' => 0.8,
+                'topK' => 40
+            ]
         ];
 
         // Initialize cURL session
-        $ch = curl_init($url);
+        $ch = curl_init($url . '?key=' . $apiKey);
 
         // Set cURL options
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
         curl_setopt($ch, CURLOPT_HTTPHEADER, [
-            'Content-Type: application/json',
-            'Authorization: Bearer ' . $apiKey,
-            'HTTP-Referer: https://localhost',
-            'X-Title: StudyNotesApp'
+            'Content-Type: application/json'
         ]);
 
         // Execute cURL session and get the response
@@ -191,12 +233,17 @@ class Note {
         $responseData = json_decode($response, true);
 
         // Extract the summary from the response
-        if (isset($responseData['choices'][0]['message']['content'])) {
-            return $responseData['choices'][0]['message']['content'];
+        if (isset($responseData['candidates'][0]['content']['parts'][0]['text'])) {
+            return $responseData['candidates'][0]['content']['parts'][0]['text'];
         } else {
             // If the response format is unexpected, return a fallback summary
             return "AI summary generation failed. Please try again later. Unexpected response format.";
         }
+    }
+
+    public function generateSummaryWithOpenRouter($content) {
+        // For backward compatibility, now calls the Gemini API
+        return $this->generateSummaryWithGemini($content);
     }
 
     public function generateModuleSummaries($moduleId, $studentId) {
