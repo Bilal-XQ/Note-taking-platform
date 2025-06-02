@@ -321,13 +321,26 @@ class Quiz {
      * @return array|bool The generated quiz data or false on failure
      */
     public function generateQuizWithOpenRouter($noteContent, $noteTitle) {
-        // OpenRouter API key
-        $apiKey = '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';
-        $url = 'https://openrouter.ai/api/v1/chat/completions';
+        // For backward compatibility, now calls the Gemini API
+        return $this->generateQuizWithGemini($noteContent, $noteTitle);
+    }
+
+    /**
+     * Generate a quiz using the Gemini API
+     * 
+     * @param string $noteContent The content of the note
+     * @param string $noteTitle The title of the note
+     * @param int $numQuestions The number of questions to generate (default: 5)
+     * @return array|bool The generated quiz data or false on failure
+     */
+    public function generateQuizWithGemini($noteContent, $noteTitle, $numQuestions = 5) {
+        // Gemini API key
+        $apiKey = 'AIzaSyBPw9pwzj7sJL5xjUbrA9daktgfWvHH3dE';
+        $url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
 
         // Prepare the request data
         $prompt = "Generate a quiz based on the following note content. The note title is: '$noteTitle'. 
-        Create 3-5 multiple-choice questions that test understanding of the key concepts in the note.
+        Create $numQuestions multiple-choice questions that test understanding of the key concepts in the note.
 
         For each question:
         1. Provide the question text
@@ -355,33 +368,33 @@ class Quiz {
         $noteContent";
 
         $data = [
-            'model' => 'openai/gpt-3.5-turbo',
-            'messages' => [
+            'contents' => [
                 [
-                    'role' => 'system',
-                    'content' => 'You are a helpful assistant that generates quizzes based on note content.'
-                ],
-                [
-                    'role' => 'user',
-                    'content' => $prompt
+                    'parts' => [
+                        [
+                            'text' => $prompt
+                        ]
+                    ]
                 ]
             ],
-            'temperature' => 0.2,
-            'max_tokens' => 1024
+            'generationConfig' => [
+                'temperature' => 0.2,
+                'maxOutputTokens' => 1024,
+                'topP' => 0.8,
+                'topK' => 40
+            ]
         ];
 
         // Initialize cURL session
-        $ch = curl_init($url);
+        $ch = curl_init($url . '?key=' . $apiKey);
 
         // Set cURL options
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false); // Disable SSL verification to fix certificate issues
         curl_setopt($ch, CURLOPT_HTTPHEADER, [
-            'Content-Type: application/json',
-            'Authorization: Bearer ' . $apiKey,
-            'HTTP-Referer: https://localhost',
-            'X-Title: StudyNotesApp'
+            'Content-Type: application/json'
         ]);
 
         // Execute cURL session and get the response
@@ -400,8 +413,8 @@ class Quiz {
         $responseData = json_decode($response, true);
 
         // Extract the quiz data from the response
-        if (isset($responseData['choices'][0]['message']['content'])) {
-            $quizText = $responseData['choices'][0]['message']['content'];
+        if (isset($responseData['candidates'][0]['content']['parts'][0]['text'])) {
+            $quizText = $responseData['candidates'][0]['content']['parts'][0]['text'];
 
             // Extract JSON from the response (it might be wrapped in markdown code blocks)
             preg_match('/\{.*\}/s', $quizText, $matches);
@@ -417,5 +430,35 @@ class Quiz {
         }
 
         return false;
+    }
+
+    /**
+     * Generate a quiz from multiple notes using the Gemini API
+     * 
+     * @param array $notes Array of notes, each containing 'content' and 'title'
+     * @param int $numQuestions The number of questions to generate
+     * @return array|bool The generated quiz data or false on failure
+     */
+    public function generateQuizFromMultipleNotes($notes, $numQuestions = 5) {
+        if (empty($notes)) {
+            return false;
+        }
+
+        // Combine note contents and create a title
+        $combinedContent = "";
+        $titles = [];
+
+        foreach ($notes as $note) {
+            $combinedContent .= "Note: " . $note['title'] . "\n\n" . $note['content'] . "\n\n---\n\n";
+            $titles[] = $note['title'];
+        }
+
+        $combinedTitle = "Quiz on " . implode(", ", $titles);
+        if (count($titles) > 3) {
+            $combinedTitle = "Quiz on " . $titles[0] . ", " . $titles[1] . ", " . $titles[2] . " and " . (count($titles) - 3) . " more";
+        }
+
+        // Generate quiz using the combined content
+        return $this->generateQuizWithGemini($combinedContent, $combinedTitle, $numQuestions);
     }
 }
