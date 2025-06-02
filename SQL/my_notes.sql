@@ -1,3 +1,5 @@
+use my_notes;
+
 create table admins
 (
     id       int auto_increment
