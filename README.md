@@ -139,7 +139,6 @@ studynotes/
 - ✅ API keys use environment variables
 - ✅ `.env` file is ignored by Git
 - ✅ Only placeholder values in repository
-- ⚠️ **Never commit real API keys**
 
 ## 🤝 Contributing
 
