@@ -100,14 +100,14 @@ A modern web application that helps students organize their academic materials u
    # Edit .env file
    GEMINI_API_KEY=your_actual_api_key_here
    DB_HOST=localhost
-   DB_NAME=studynotes
+   DB_NAME=my_notes
    DB_USER=your_db_user
    DB_PASS=your_db_password
    ```
 
 4. **Setup Database**
    ```bash
-   mysql -u root -p -e "CREATE DATABASE studynotes;"
+   mysql -u root -p -e "CREATE DATABASE my_notes;"
    ```
 
 5. **Start Development**
