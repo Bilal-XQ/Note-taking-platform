@@ -1,0 +1,26 @@
+{
+  "short_name": "StudyNotes",
+  "name": "StudyNotes - Intelligent Note-Taking Platform",
+  "description": "Organize your course notes, improve your study habits, and boost academic performance with our intelligent note-taking platform.",
+  "icons": [
+    {
+      "src": "favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "logo192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "logo512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#8b5cf6",
+  "background_color": "#ffffff"
+}

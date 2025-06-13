@@ -23,18 +23,24 @@ class QuizController {
     public function generateQuiz($noteId) {
         $studentId = $this->authController->getCurrentStudentId();
         if (!$studentId) {
+            error_log('QuizController: No student ID');
+            echo '<div style="color:red">Error: Not logged in.</div>';
             return false;
         }
 
         // Get the note
         $note = $this->notesController->getNote($noteId);
         if (!$note) {
+            error_log('QuizController: Note not found for ID ' . $noteId);
+            echo '<div style="color:red">Error: Note not found.</div>';
             return false;
         }
 
         // Generate quiz data using OpenRouter API
         $quizData = $this->quizModel->generateQuizWithOpenRouter($note['content'], $note['title']);
         if (!$quizData || !isset($quizData['questions']) || empty($quizData['questions'])) {
+            error_log('QuizController: Quiz data not generated or empty for note ID ' . $noteId);
+            echo '<div style="color:red">Error: Quiz data not generated or empty.</div>';
             return false;
         }
 
@@ -44,6 +50,8 @@ class QuizController {
         $quizId = $this->quizModel->createQuiz($noteId, $quizTitle, $quizDescription);
 
         if (!$quizId) {
+            error_log('QuizController: Failed to create quiz in DB for note ID ' . $noteId);
+            echo '<div style="color:red">Error: Failed to create quiz in database.</div>';
             return false;
         }
 
@@ -56,6 +64,8 @@ class QuizController {
             $questionId = $this->quizModel->addQuestion($quizId, $questionText);
 
             if (!$questionId) {
+                error_log('QuizController: Failed to add question to DB for quiz ID ' . $quizId);
+                echo '<div style="color:red">Error: Failed to add question to database.</div>';
                 continue;
             }
 
@@ -64,7 +74,89 @@ class QuizController {
                 $answerText = $answerData['text'];
                 $isCorrect = $answerData['isCorrect'];
 
-                $this->quizModel->addAnswer($questionId, $answerText, $isCorrect, $explanation);
+                $result = $this->quizModel->addAnswer($questionId, $answerText, $isCorrect, $explanation);
+                if (!$result) {
+                    error_log('QuizController: Failed to add answer to DB for question ID ' . $questionId);
+                    echo '<div style="color:red">Error: Failed to add answer to database.</div>';
+                }
+            }
+        }
+
+        return $quizId;
+    }
+
+    /**
+     * Generate a quiz from multiple notes
+     * 
+     * @param array $notes Array of notes
+     * @param int $numQuestions Number of questions to generate
+     * @return int|bool The ID of the new quiz or false on failure
+     */
+    public function generateQuizFromMultipleNotes($notes, $numQuestions = 5) {
+        $studentId = $this->authController->getCurrentStudentId();
+        if (!$studentId || empty($notes)) {
+            error_log('QuizController: No student ID or notes array empty');
+            echo '<div style="color:red">Error: Not logged in or no notes selected.</div>';
+            return false;
+        }
+
+        // Generate quiz data using the Quiz model
+        $quizData = $this->quizModel->generateQuizFromMultipleNotes($notes, $numQuestions);
+        if (!$quizData || !isset($quizData['questions']) || empty($quizData['questions'])) {
+            error_log('QuizController: Quiz data not generated or empty for multiple notes');
+            echo '<div style="color:red">Error: Quiz data not generated or empty.</div>';
+            return false;
+        }
+
+        // Create a combined title from the notes
+        $titles = [];
+        foreach ($notes as $note) {
+            $titles[] = $note['title'];
+        }
+
+        $combinedTitle = "Quiz on " . implode(", ", $titles);
+        if (count($titles) > 3) {
+            $combinedTitle = "Quiz on " . $titles[0] . ", " . $titles[1] . ", " . $titles[2] . " and " . (count($titles) - 3) . " more";
+        }
+
+        $quizDescription = "Generated quiz based on multiple notes";
+
+        // Use the first note's ID for the quiz (we'll need to associate it with a note)
+        $noteId = $notes[0]['id'];
+
+        // Create the quiz
+        $quizId = $this->quizModel->createQuiz($noteId, $combinedTitle, $quizDescription);
+
+        if (!$quizId) {
+            error_log('QuizController: Failed to create quiz in DB for multiple notes');
+            echo '<div style="color:red">Error: Failed to create quiz in database.</div>';
+            return false;
+        }
+
+        // Add questions and answers
+        foreach ($quizData['questions'] as $questionData) {
+            $questionText = $questionData['question'];
+            $explanation = $questionData['explanation'] ?? '';
+
+            // Add the question
+            $questionId = $this->quizModel->addQuestion($quizId, $questionText);
+
+            if (!$questionId) {
+                error_log('QuizController: Failed to add question to DB for quiz ID ' . $quizId);
+                echo '<div style="color:red">Error: Failed to add question to database.</div>';
+                continue;
+            }
+
+            // Add the answers
+            foreach ($questionData['answers'] as $answerData) {
+                $answerText = $answerData['text'];
+                $isCorrect = $answerData['isCorrect'];
+
+                $result = $this->quizModel->addAnswer($questionId, $answerText, $isCorrect, $explanation);
+                if (!$result) {
+                    error_log('QuizController: Failed to add answer to DB for question ID ' . $questionId);
+                    echo '<div style="color:red">Error: Failed to add answer to database.</div>';
+                }
             }
         }
 

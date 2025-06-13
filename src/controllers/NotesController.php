@@ -1,4 +1,6 @@
 <?php
+// This file handles note-related business logic, such as creating, editing, deleting, and retrieving notes and modules for students.
+
 require_once __DIR__ . '/../models/Note.php';
 require_once __DIR__ . '/../models/Module.php';
 require_once __DIR__ . '/../models/Student.php';

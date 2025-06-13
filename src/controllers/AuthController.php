@@ -1,4 +1,7 @@
 <?php
+// This file handles authentication logic for students and admins.
+// It manages login, session, and user role checks.
+
 require_once __DIR__ . '/../models/Student.php';
 require_once __DIR__ . '/../models/Module.php';
 

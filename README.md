@@ -287,6 +287,37 @@ cp .env.example .env
 # Configure your database and API settings in .env
 ```
 
+### ⚠️ Important: API Key Configuration
+
+**This project requires a Gemini API key for AI features to work properly.**
+
+1. **Get your Gemini API key:**
+   - Go to [Google AI Studio](https://makersuite.google.com/app/apikey)
+   - Sign in with your Google account
+   - Create a new API key
+   - Copy the generated key
+
+2. **Configure your API key:**
+   - Open the `.env` file in your project root
+   - Find the line: `GEMINI_API_KEY=your-gemini-api-key-here`
+   - Replace `your-gemini-api-key-here` with your actual API key:
+   ```env
+   GEMINI_API_KEY=AIzaSyYourActualApiKeyHere
+   ```
+
+3. **Security Notes:**
+   - **NEVER commit your actual API key to version control**
+   - The `.env` file is already in `.gitignore` to prevent accidental commits
+   - Keep your API key secure and don't share it publicly
+   - Consider using environment variables in production environments
+
+4. **Features requiring API key:**
+   - 🤖 AI-powered note summaries
+   - 📝 Automatic quiz generation from notes
+   - 🧠 Smart content analysis
+
+**Without a valid API key, these AI features will show error messages.**
+
 4. **Database setup**
 ```bash
 # Create database
@@ -338,9 +369,34 @@ JavaScript — Adds interactivity (modals, alerts, dynamic buttons)
 Future Enhancements (AI Integration)
 Integrate Artificial Intelligence to:
 
-Generate summaries from students��� notes
+Generate summaries from students' notes
 
 Create quizzes to help students review their content
+
+---
+
+## 🔒 Security & Best Practices
+
+### API Key Security
+- **Never commit API keys** to version control
+- Use environment variables for all sensitive configuration
+- The `.env` file is automatically ignored by Git
+- Rotate API keys regularly in production
+- Monitor API usage for unusual activity
+
+### Development Guidelines
+- Always use `.env.example` as a template for environment setup
+- Keep dependencies updated for security patches
+- Use HTTPS in production environments
+- Implement proper input validation and sanitization
+- Follow PHP security best practices for database queries
+
+### Production Deployment
+- Use dedicated environment variables instead of `.env` files
+- Enable error logging but disable error display
+- Implement rate limiting for API endpoints
+- Use proper database user permissions
+- Set up monitoring and alerting
 
 ---
 

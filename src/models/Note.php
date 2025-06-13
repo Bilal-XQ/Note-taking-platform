@@ -182,8 +182,8 @@ class Note {
     }
 
     public function generateSummaryWithGemini($content) {
-        // Gemini API key
-        $apiKey = 'AIzaSyBPw9pwzj7sJL5xjUbrA9daktgfWvHH3dE';
+        // Get API key from environment variables
+        $apiKey = $_ENV['GEMINI_API_KEY'] ?? getenv('GEMINI_API_KEY');
         $url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
 
         // Prepare the request data
